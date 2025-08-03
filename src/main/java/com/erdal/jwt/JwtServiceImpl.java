@@ -2,29 +2,32 @@ package com.erdal.jwt;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.security.Key;
 import java.util.Date;
 
 @Service
+@RequiredArgsConstructor
 public class JwtServiceImpl {
 
-    // Key uzunluğu en az 256 bit olmalı, örnek:
-    private static final String SECRET_KEY = "erdal_super_secret_key_for_jwt_which_is_very_long";
+    @Value("${jwt.secret-key}")
+    private String secretKey;
 
-    // Token geçerlilik süresi (örnek: 24 saat)
-    private static final long EXPIRATION_TIME = 1000 * 60 * 60 * 24;
+    @Value("${jwt.expiration-time}")
+    private long expirationTime;
 
     private Key getSigningKey() {
-        return Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
+        return Keys.hmacShaKeyFor(secretKey.getBytes());
     }
 
     public String generateToken(String username) {
         return Jwts.builder()
                 .setSubject(username)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
+                .setExpiration(new Date(System.currentTimeMillis() + expirationTime))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
     }

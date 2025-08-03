@@ -1,32 +1,54 @@
 package com.erdal.service;
 
-import com.erdal.dto.LoginRequest;
-import com.erdal.dto.LoginResponse;
-import com.erdal.dto.RegisterRequest;
+import com.erdal.dto.*;
+import com.erdal.exeptions.AuthBadRequestException;
+import com.erdal.exeptions.AuthNotFoundException;
+import com.erdal.exeptions.ErrorMessages;
+import com.erdal.jwt.JwtServiceImpl;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
-    // Buraya userRepository, passwordEncoder, jwtService vs. gibi bağımlılıkları ekleyeceksin.
+    private final UserServiceClient userServiceClient;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtServiceImpl jwtService;
 
     @Override
     public LoginResponse register(RegisterRequest request) {
-        // Kayıt işlemini buraya yaz
-        // Kullanıcı oluştur, password encode et, token üret vs.
+        String encodedPassword = passwordEncoder.encode(request.getPassword());
 
-        // Şimdilik dummy token dönelim (sonra gerçek token ile değiştirirsin)
-        return new LoginResponse("dummy-token-register", null);
+        UserDTO newUser = new UserDTO();
+        newUser.setFullName(request.getFullName());
+        newUser.setUserName(request.getUserName());
+        newUser.setEmail(request.getEmail());
+        newUser.setPassword(encodedPassword);
+        newUser.setPhone(request.getPhone());
+
+        UserDTO savedUser = userServiceClient.createUser(newUser);
+        if (savedUser == null) {
+            throw new AuthBadRequestException(ErrorMessages.REGISTER_FAILED);
+        }
+
+        String token = jwtService.generateToken(savedUser.getUserName());
+        return new LoginResponse(token, savedUser);
     }
 
     @Override
     public LoginResponse authenticate(LoginRequest request) {
-        // Giriş işlemi burada olacak
-        // Kullanıcı doğrulama, password kontrolü, token üretimi vs.
+        UserDTO existingUser = userServiceClient.getUserByUsername(request.getUserName());
+        if (existingUser == null) {
+            throw new AuthNotFoundException(ErrorMessages.USER_NOT_FOUND);
+        }
 
-        // Şimdilik dummy token dönelim (sonra gerçek token ile değiştirirsin)
-        return new LoginResponse("dummy-token-login", null);
+        if (!passwordEncoder.matches(request.getPassword(), existingUser.getPassword())) {
+            throw new AuthBadRequestException(ErrorMessages.INVALID_CREDENTIALS);
+        }
+
+        String token = jwtService.generateToken(existingUser.getUserName());
+        return new LoginResponse(token, existingUser);
     }
 }

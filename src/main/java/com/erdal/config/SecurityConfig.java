@@ -1,6 +1,6 @@
 package com.erdal.config;
 
-import com.erdal.jwt.JwtAuthenticationFilter;
+import com.erdal.jwt.JwtAuthFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,7 +22,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    private final JwtAuthenticationFilter jwtAuthFilter;
+    private final JwtAuthFilter jwtAuthFilter;
     private final UserDetailsService userDetailsService;
 
     @Bean
@@ -30,7 +30,7 @@ public class SecurityConfig {
         http
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/v1/auth/**").permitAll()  // Auth endpoints izinli
+                .requestMatchers("/api/v1/auth/**").permitAll()
                 .anyRequest().authenticated()
             )
             .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -42,10 +42,10 @@ public class SecurityConfig {
 
     @Bean
     public AuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-        authProvider.setUserDetailsService(userDetailsService);
-        authProvider.setPasswordEncoder(passwordEncoder());
-        return authProvider;
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+        provider.setUserDetailsService(userDetailsService);
+        provider.setPasswordEncoder(passwordEncoder());
+        return provider;
     }
 
     @Bean
@@ -53,10 +53,8 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-    // AuthenticationManager bean'i oluşturuyoruz, gerektiğinde kullanacağız.
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
 }
-

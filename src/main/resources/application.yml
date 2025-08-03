@@ -1,0 +1,29 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: auth-service
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/   # Eureka server URL
+  instance:
+    prefer-ip-address: true
+
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 5000
+        readTimeout: 5000
+
+jwt:
+  secret-key: erdal_super_secret_key_for_jwt_which_is_very_long
+  expiration-time: 86400000 # 24 saat (milisaniye)
+
+logging:
+  level:
+    com.erdal: DEBUG
+
