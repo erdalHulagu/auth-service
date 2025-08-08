@@ -1,17 +1,17 @@
 package com.erdal.jwt;
 
+import  com.erdal.jwt.JwtService;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-
 import java.security.Key;
 import java.util.Date;
 
 @Service
 @RequiredArgsConstructor
-public class JwtServiceImpl {
+public class JwtServiceImpl implements JwtService{
 
     @Value("${jwt.secret-key}")
     private String secretKey;

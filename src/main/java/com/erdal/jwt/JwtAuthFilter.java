@@ -1,5 +1,6 @@
 package com.erdal.jwt;
 
+import com.erdal.jwt.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -11,18 +12,17 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-
+import org.springframework.stereotype.Service;
 import java.io.IOException;
 
-@Component
+@Service
 @RequiredArgsConstructor
 public class JwtAuthFilter extends OncePerRequestFilter {
 
-    private final JwtServiceImpl jwtService;
+    private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
-public JwtAuthFilter(UserDetailsService userDetailsService) {
-    this.userDetailsService = userDetailsService;
-}
+
+
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
