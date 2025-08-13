@@ -1,18 +1,23 @@
 package com.erdal.jwt;
 
-import com.erdal.jwt.JwtService;
+
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
-import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.stereotype.Service;
+import org.springframework.util.AntPathMatcher;
+import org.springframework.util.StringUtils;
+
 import java.io.IOException;
 
 @Service
@@ -23,35 +28,61 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private final UserDetailsService userDetailsService;
 
 
-    @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain) throws ServletException, IOException {
+	private static final Logger logger = LoggerFactory.getLogger(JwtAuthFilter.class);
+	
+	@Override
+	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+	        throws ServletException, IOException {
+	    String jwtToken = parseJwt(request);
+	    
+	    logger.info("Extracted JWT Token: {}", jwtToken);  // Add this line to log the token.
+	    
+	    try {
+	        if(jwtToken != null && jwtService.validateToken(jwtToken)) {
+	            String email = jwtService.extractUsername(jwtToken);
+	            UserDetails userDetails = userDetailsService.loadUserByUsername(email);
+	            
+	            UsernamePasswordAuthenticationToken authenticationToken = new 
+	                    UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+	            
+	            SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+	        }
+	    } catch (Exception e) {
+	        logger.error("User not Found: {}", e.getMessage());
+	    }
+	    
+	    filterChain.doFilter(request, response);
+	}
 
-        final String authHeader = request.getHeader("Authorization");
-        final String jwt;
-        final String username;
+	private String parseJwt(HttpServletRequest request) {
+	    String header = request.getHeader("Authorization");
+	    logger.info("Authorization Header: " + header);  // Add this for debugging
+	    if (StringUtils.hasText(header) && header.startsWith("Bearer ")) {
+	        String token = header.substring(7);
+	        // Check if the token contains 2 periods (valid JWT format)
+	        if (token.chars().filter(ch -> ch == '.').count() == 2) {
+	            return token;
+	        }
+//	        String jwt = parseJwt(request);
+//	    	if (jwt == null) {
+//	    	    logger.error("JWT token is missing or invalid");
+//	    	} else {
+//	    	    logger.info("Extracted JWT Token: " + jwt);
+//	    	}
+	        logger.error("Invalid JWT format: {}", token);
+	    }
+	    return null;
+	    
+	}
 
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            filterChain.doFilter(request, response);
-            return;
-        }
+	
+	
+	// filtrelenmemesini istediğim end-pointler
+	@Override
+	protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+		AntPathMatcher antPathMatcher = new AntPathMatcher();
+		return antPathMatcher.match("/register", request.getServletPath()) || 
+				      antPathMatcher.match("/login",request.getServletPath());
+	}
 
-        jwt = authHeader.substring(7);
-        username = jwtService.extractUsername(jwt);
-
-        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            var userDetails = userDetailsService.loadUserByUsername(username);
-
-            if (jwtService.validateToken(jwt)) {
-                var authToken = new UsernamePasswordAuthenticationToken(
-                        userDetails, null, userDetails.getAuthorities()
-                );
-                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authToken);
-            }
-        }
-
-        filterChain.doFilter(request, response);
-    }
 }

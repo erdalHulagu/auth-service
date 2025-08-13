@@ -1,10 +1,12 @@
 package com.erdal.service;
 
+import com.erdal.config.SecurityUtils;
 import com.erdal.dto.*;
 import com.erdal.exeptions.AuthBadRequestException;
 import com.erdal.exeptions.AuthNotFoundException;
 import com.erdal.exeptions.ErrorMessages;
 import com.erdal.jwt.JwtServiceImpl;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -51,4 +53,18 @@ public class AuthServiceImpl implements AuthService {
         String token = jwtService.generateToken(existingUser.getUserName());
         return new LoginResponse(token, existingUser);
     }
+ // ------------------ get current user ------------------------
+ 	public UserDTO getCurrentUser(LoginRequest request) {
+
+ 		String email = SecurityUtils.getCurrentUserLogin()
+ 				.orElseThrow(() -> new AuthNotFoundException(ErrorMessages.PRINCIPAL_FOUND_MESSAGE));
+ 		UserDTO existingUser = userServiceClient.getUserByUsername(request.getUserName());
+        if (existingUser == null) {
+            throw new AuthNotFoundException(ErrorMessages.USER_NOT_FOUND);
+        }
+
+ 		return existingUser;
+
+ 	}
+ 	
 }
