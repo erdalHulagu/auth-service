@@ -8,7 +8,6 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import com.erdal.dto.UserDTO;
-import com.sohbet.domain.User;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

@@ -5,19 +5,18 @@ import com.erdal.dto.*;
 import com.erdal.exeptions.AuthBadRequestException;
 import com.erdal.exeptions.AuthNotFoundException;
 import com.erdal.exeptions.ErrorMessages;
-import com.erdal.jwt.JwtServiceImpl;
+import com.erdal.jwt.JwtService;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
     private final UserServiceClient userServiceClient;
     private final PasswordEncoder passwordEncoder;
-    private final JwtServiceImpl jwtService;
+    private final JwtService jwtService;
 
     @Override
     public LoginResponse register(RegisterRequest request) {
@@ -35,7 +34,8 @@ public class AuthServiceImpl implements AuthService {
             throw new AuthBadRequestException(ErrorMessages.REGISTER_FAILED);
         }
 
-        String token = jwtService.generateToken(savedUser.getUserName());
+        // UserDetailsImpl ile token üret
+        String token = jwtService.generateToken(UserDetailsImpl.build(savedUser));
         return new LoginResponse(token, savedUser);
     }
 
@@ -50,21 +50,19 @@ public class AuthServiceImpl implements AuthService {
             throw new AuthBadRequestException(ErrorMessages.INVALID_CREDENTIALS);
         }
 
-        String token = jwtService.generateToken(existingUser.getUserName());
+        String token = jwtService.generateToken(UserDetailsImpl.build(existingUser));
         return new LoginResponse(token, existingUser);
     }
- // ------------------ get current user ------------------------
- 	public UserDTO getCurrentUser(LoginRequest request) {
 
- 		String email = SecurityUtils.getCurrentUserLogin()
- 				.orElseThrow(() -> new AuthNotFoundException(ErrorMessages.PRINCIPAL_FOUND_MESSAGE));
- 		UserDTO existingUser = userServiceClient.getUserByUsername(request.getUserName());
+    // ------------------ get current user ------------------------
+    public UserDTO getCurrentUser() {
+        String currentUserName = SecurityUtils.getCurrentUserLogin()
+                .orElseThrow(() -> new AuthNotFoundException(ErrorMessages.PRINCIPAL_FOUND_MESSAGE));
+
+        UserDTO existingUser = userServiceClient.getUserByUsername(currentUserName);
         if (existingUser == null) {
             throw new AuthNotFoundException(ErrorMessages.USER_NOT_FOUND);
         }
-
- 		return existingUser;
-
- 	}
- 	
+        return existingUser;
+    }
 }

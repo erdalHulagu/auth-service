@@ -1,29 +1,26 @@
 package com.erdal.service;
-import org.springframework.beans.factory.annotation.Autowired;
+
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import com.sohbet.domain.User;
-import com.sohbet.service.UserService;
+import com.erdal.dto.UserDTO;
 
-import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 
 @Service
-public class UserDetailsServiceImpl implements UserDetailsService{
+@RequiredArgsConstructor
+public class UserDetailsServiceImpl implements UserDetailsService {
 
-	@Autowired
-	private UserService userService;
-	
-	
-	
-	@Override
-	@Transactional
-	public UserDetails loadUserByUsername(String  email) throws UsernameNotFoundException {
-		
-		 User user =  userService.getUserByEmail(email);
-		 return UserDetailsImpl.build(user);
-	}
+    private final UserServiceClient userServiceClient;
 
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        UserDTO user = userServiceClient.getUserByUsername(username);
+        if (user == null) {
+            throw new UsernameNotFoundException("User not found: " + username);
+        }
+        return UserDetailsImpl.build(user);
+    }
 }
